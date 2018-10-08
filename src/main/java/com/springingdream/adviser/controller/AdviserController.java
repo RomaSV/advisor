@@ -18,6 +18,14 @@ public class AdviserController {
     @Autowired
     private AdviserService adviserService;
 
+    @GetMapping("/recommendations")
+    @ApiOperation(value = "Get products similar to one in params.")
+    public PagedResponse<ProductResponse> getRecommendations(@RequestParam(value = "userId") int userId,
+                                                     @RequestParam(value = "page") int page,
+                                                     @RequestParam(value = "size") int size) {
+        return adviserService.getGeneralRecommendations(userId, page, size);
+    }
+
     @GetMapping("/similar")
     @ApiOperation(value = "Get products similar to one in params.")
     public PagedResponse<ProductResponse> getSimilar(@RequestParam(value = "prodId") long productId,

@@ -50,7 +50,12 @@ public class ServiceTests {
         thirdPreferences.addProductRating(3L, 5);
         preferences.add(thirdPreferences);
 
-        System.out.println(adviser.recommend(thirdPreferences.getOwnerId(), preferences));
+        List<Long> expected = new ArrayList<>();
+        expected.add(1L);
+        expected.add(2L);
+        expected.add(7L);
+
+        assertEquals(expected, adviser.recommend(thirdPreferences.getOwnerId(), preferences));
     }
 
 }

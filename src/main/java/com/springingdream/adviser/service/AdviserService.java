@@ -4,16 +4,42 @@ import com.springingdream.adviser.model.Product;
 import com.springingdream.adviser.model.UserPreferences;
 import com.springingdream.adviser.payload.PagedResponse;
 import com.springingdream.adviser.payload.ProductResponse;
+import com.springingdream.adviser.util.ModelMapper;
+import com.springingdream.adviser.util.ProductsAPI;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AdviserService {
 
-    public PagedResponse<ProductResponse> getGeneralRecommendations(Long userId, int page, int size) {
-        //TODO collaboration filtering
-        return null;
+    public PagedResponse<ProductResponse> getGeneralRecommendations(int userId, int page, int size) {
+        List<UserPreferences> preferences = getPreferences();
+        List<Long> recommendations = recommend(userId, preferences);
+
+        List<Product> products = ProductsAPI.getProductsByIdIn(recommendations);
+
+        if (products == null) {
+            return new PagedResponse<>(Collections.emptyList(), 0, 0, 0, 0, true);
+        }
+
+        int totalElements = products.size();
+        int totalPages = totalElements / size + 1;
+        boolean last = false;
+
+        List<ProductResponse> productResponses = products.stream()
+                .map(ModelMapper::mapProductToProductResponse).collect(Collectors.toList());
+
+        if ((page + 1) * size > totalElements) {
+            productResponses = productResponses.subList(page * size, totalElements);
+            last = true;
+        } else {
+            productResponses = productResponses.subList(page * size, (page + 1) * size);
+        }
+
+        return new PagedResponse<>(productResponses, page, size, totalElements, totalPages, last);
+
     }
 
     public PagedResponse<ProductResponse> getSimilar(Product product, Long userId, int page, int size) {
@@ -39,7 +65,7 @@ public class AdviserService {
 
         Map<Long, Double> rank = new HashMap<>();
 
-        for (UserPreferences otherUserPref: preferences) {
+        for (UserPreferences otherUserPref : preferences) {
             if (!otherUserPref.getOwnerId().equals(userId)) {
                 double similarity = calcSimilarity(userPreferences, otherUserPref);
 
@@ -47,7 +73,7 @@ public class AdviserService {
                     continue;
                 }
 
-                for (Long productId: otherUserPref.getPreferences().keySet()) {
+                for (Long productId : otherUserPref.getPreferences().keySet()) {
                     if (!userPreferences.contains(productId)) {
                         if (!rank.containsKey(productId)) {
                             rank.put(productId, 0.0);
@@ -74,8 +100,8 @@ public class AdviserService {
 
         List<Long> commonProducts = new ArrayList<>();
 
-        for (Long product: preferences.getPreferences().keySet()) {
-            for (Long otherProduct: otherPreferences.getPreferences().keySet()){
+        for (Long product : preferences.getPreferences().keySet()) {
+            for (Long otherProduct : otherPreferences.getPreferences().keySet()) {
                 if (product.equals(otherProduct)) {
                     commonProducts.add(product);
                     break;
@@ -83,7 +109,7 @@ public class AdviserService {
             }
         }
 
-        for (Long product: commonProducts) {
+        for (Long product : commonProducts) {
             result += Math.abs(preferences.getProductRating(product) - otherPreferences.getProductRating(product));
         }
 
@@ -91,7 +117,7 @@ public class AdviserService {
             result /= commonProducts.size();
         }
 
-        return 1/result;
+        return 1 / result;
     }
 
     private List<UserPreferences> getPreferences() {
