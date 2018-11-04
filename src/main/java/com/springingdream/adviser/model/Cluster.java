@@ -4,6 +4,7 @@ import java.util.*;
 
 public class Cluster {
 
+    private long id;
     private List<UserPreferences> users;
     private Map<Long, Double> centroid;
 
@@ -39,6 +40,22 @@ public class Cluster {
         return distance;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public List<UserPreferences> getUsers() {
+        return users;
+    }
+
+    public int getSize() {
+        return users.size();
+    }
+
     private void calcCentroid() {
         for (UserPreferences user : users) {
             Set<Long> products = user.getPreferences().keySet();
@@ -47,7 +64,7 @@ public class Cluster {
                 if (centroid.containsKey(product)) {
                     centroid.put(product, centroid.get(product) + user.getProductRating(product));
                 } else {
-                    centroid.put(product, user.getProductRating(product).doubleValue());
+                    centroid.put(product, (double)user.getProductRating(product));
                 }
             }
 
@@ -56,4 +73,10 @@ public class Cluster {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return "Cluster with id " + id + " contains: " + users.toString();
+    }
+
 }

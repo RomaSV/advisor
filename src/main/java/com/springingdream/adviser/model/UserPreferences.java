@@ -5,19 +5,19 @@ import java.util.Map;
 
 public class UserPreferences {
 
-    private Integer ownerId;
+    private int ownerId;
     private Map<Long, Integer> preferences;
 
-    public UserPreferences(Integer owner) {
+    public UserPreferences(int owner) {
         ownerId = owner;
         preferences = new HashMap<>();
     }
 
-    public Integer getOwnerId() {
+    public int getOwnerId() {
         return ownerId;
     }
 
-    public void setOwnerId(Integer ownerId) {
+    public void setOwnerId(int ownerId) {
         this.ownerId = ownerId;
     }
 
@@ -29,15 +29,20 @@ public class UserPreferences {
         this.preferences = preferences;
     }
 
-    public void addProductRating(Long productId, Integer rating) {
+    public void addProductRating(long productId, int rating) {
         preferences.put(productId, rating);
     }
 
-    public Integer getProductRating(Long productId) {
+    public int getProductRating(long productId) {
         return preferences.get(productId);
     }
 
-    public boolean contains(Long productId) {
+    public boolean contains(long productId) {
         return preferences.containsKey(productId);
+    }
+
+    @Override
+    public String toString() {
+        return "User " + ownerId + ": " + preferences.toString();
     }
 }
