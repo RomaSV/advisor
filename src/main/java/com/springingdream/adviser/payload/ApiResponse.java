@@ -1,13 +1,13 @@
 package com.springingdream.adviser.payload;
 
-public class ApiResponse {
+public class ApiResponse<T> {
 
     private Boolean success;
-    private String message;
+    private T body;
 
-    public ApiResponse(Boolean success, String message) {
+    public ApiResponse(Boolean success, T body) {
         this.success = success;
-        this.message = message;
+        this.body = body;
     }
 
     public Boolean getSuccess() {
@@ -18,12 +18,12 @@ public class ApiResponse {
         this.success = success;
     }
 
-    public String getMessage() {
-        return message;
+    public T getBody() {
+        return body;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setBody(T body) {
+        this.body = body;
     }
 
 }

@@ -27,7 +27,7 @@ public class AdviserService {
      * @param page - number of the current page of a recommendations list
      * @param size - amount of recommendations on each page
      */
-    public PagedResponse<ProductResponse> getGeneralRecommendations(int userId, int page, int size) {
+    public ApiResponse getGeneralRecommendations(int userId, int page, int size) {
         List<UserPreferences> preferences = getPreferences();
         return getGeneralRecommendations(userId, page, size, preferences);
     }
@@ -38,22 +38,22 @@ public class AdviserService {
      * @param page - number of the current page of a recommendations list
      * @param size - amount of recommendations on each page
      */
-    public PagedResponse<ProductResponse> getGeneralRecommendationsByCluster(int userId, int page, int size) {
+    public ApiResponse getGeneralRecommendationsByCluster(int userId, int page, int size) {
         List<UserPreferences> preferences = getPreferencesForCluster(userId);
         return getGeneralRecommendations(userId, page, size, preferences);
     }
 
-    public PagedResponse<ProductResponse> getSimilar(Product product, long userId, int page, int size) {
+    public ApiResponse getSimilar(Product product, long userId, int page, int size) {
         //TODO collaboration filtering
         return null;
     }
 
-    public PagedResponse<ProductResponse> getSimilar(Product product, int page, int size) {
+    public ApiResponse getSimilar(Product product, int page, int size) {
         //TODO one of content based methods.. or not?
         return null;
     }
 
-    public PagedResponse<ProductResponse> getRelated(Product product, int page, int size) {
+    public ApiResponse getRelated(Product product, int page, int size) {
         //TODO one of content based methods.. or not?
         return null;
     }
@@ -99,7 +99,7 @@ public class AdviserService {
 
         }
 
-        return new ApiResponse(true, "Users are successfully clustered.");
+        return new ApiResponse<>(true, "Users are successfully clustered.");
     }
 
     /**
@@ -131,14 +131,14 @@ public class AdviserService {
         cluster();
     }
 
-    private PagedResponse<ProductResponse> getGeneralRecommendations(int userId, int page, int size,
+    private ApiResponse getGeneralRecommendations(int userId, int page, int size,
                                                                      List<UserPreferences> preferences) {
         List<Long> recommendations = recommend(userId, preferences);
 
         List<Product> products = ProductsAPI.getProductsByIdIn(recommendations);
 
         if (products == null) {
-            return new PagedResponse<>(Collections.emptyList(), 0, 0, 0, 0, true);
+            return new ApiResponse<>(false, "Nothing to recommend");
         }
 
         int totalElements = products.size();
@@ -155,7 +155,8 @@ public class AdviserService {
             productResponses = productResponses.subList(page * size, (page + 1) * size);
         }
 
-        return new PagedResponse<>(productResponses, page, size, totalElements, totalPages, last);
+        return new ApiResponse<>(true,
+                new PagedResponse<>(productResponses, page, size, totalElements, totalPages, last));
     }
 
     /**
