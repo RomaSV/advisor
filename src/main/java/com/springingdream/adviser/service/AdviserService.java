@@ -6,8 +6,10 @@ import com.springingdream.adviser.model.UserPreferences;
 import com.springingdream.adviser.payload.ApiResponse;
 import com.springingdream.adviser.payload.PagedResponse;
 import com.springingdream.adviser.payload.ProductResponse;
+import com.springingdream.adviser.repository.UserPreferencesRepository;
 import com.springingdream.adviser.util.ModelMapper;
 import com.springingdream.adviser.util.ProductsAPI;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -15,6 +17,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class AdviserService {
+
+    @Autowired
+    UserPreferencesRepository userPreferencesRepository;
 
     // Just for now it's static, but should be calculated dynamically for each cluster
     private int clusterSize = 2048;
@@ -102,14 +107,13 @@ public class AdviserService {
         return new ApiResponse<>(true, "Users are successfully clustered.");
     }
 
+    public void addUserToCluster(int userId) {
+        getPreference(userId).ifPresent(this::addUserToCluster);
+    }
+
     /**
      * A silly way to add a user to cluster.
      */
-    public void addUserToCluster(int userId) {
-        UserPreferences user = getPreference(userId);
-        addUserToCluster(user);
-    }
-
     void addUserToCluster(UserPreferences user) {
 
         boolean added = false;
@@ -240,13 +244,11 @@ public class AdviserService {
     }
 
     private List<UserPreferences> getPreferences() {
-        //TODO
-        return null;
+        return userPreferencesRepository.findAll();
     }
 
-    private UserPreferences getPreference(int userId) {
-        //TODO
-        return null;
+    private Optional<UserPreferences> getPreference(int userId) {
+        return userPreferencesRepository.findById(userId);
     }
 
 }
