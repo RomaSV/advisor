@@ -1,12 +1,12 @@
-package com.springingdream.advisor;
+package com.springingdream.adviser;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AdvisorApplication {
+public class AdviserApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AdvisorApplication.class, args);
+		SpringApplication.run(AdviserApplication.class, args);
 	}
 }
