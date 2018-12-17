@@ -6,6 +6,7 @@ import com.springingdream.adviser.model.UserPreferences;
 import com.springingdream.adviser.payload.ApiResponse;
 import com.springingdream.adviser.payload.PagedResponse;
 import com.springingdream.adviser.payload.ProductResponse;
+import com.springingdream.adviser.repository.ClusterRepository;
 import com.springingdream.adviser.repository.UserPreferencesRepository;
 import com.springingdream.adviser.util.ModelMapper;
 import com.springingdream.adviser.util.ProductsAPI;
@@ -19,11 +20,19 @@ import java.util.stream.Collectors;
 public class AdviserService {
 
     @Autowired
-    UserPreferencesRepository userPreferencesRepository;
+    private UserPreferencesRepository userPreferencesRepository;
+
+    @Autowired
+    private ClusterRepository clusterRepository;
 
     // Just for now it's static, but should be calculated dynamically for each cluster
-    private int clusterSize = 2048;
+    private int clusterSize = 25;
     List<Cluster> clusters = new ArrayList<>();
+
+    public AdviserService() {
+        //TODO init clusters from DATABASE
+        cluster(); //???
+    }
 
     /**
      * Gives recommendations to user based on ratings made by ALL other users.
@@ -96,7 +105,9 @@ public class AdviserService {
 
                     if (minDistanceCluster != i) {
                         clusters.get(i).remove(user);
-                        clusters.get(minDistanceCluster).add(user);
+                        Cluster newCluster = clusters.get(minDistanceCluster);
+                        newCluster.add(user);
+                        userPreferencesRepository.setCluster(newCluster.getId(), user.getOwnerId());
                     }
 
                 }
@@ -120,6 +131,7 @@ public class AdviserService {
         for (Cluster cluster: clusters) {
             if (cluster.getSize() < clusterSize) {
                 cluster.add(user);
+                userPreferencesRepository.setCluster(cluster.getId(), user.getOwnerId());
                 added = true;
                 break;
             }
@@ -129,10 +141,12 @@ public class AdviserService {
             Cluster newCluster = new Cluster();
             newCluster.setId(clusters.size());
             newCluster.add(user);
+            userPreferencesRepository.setCluster(newCluster.getId(), user.getOwnerId());
             clusters.add(newCluster);
         }
 
         cluster();
+
     }
 
     private ApiResponse getGeneralRecommendations(int userId, int page, int size,

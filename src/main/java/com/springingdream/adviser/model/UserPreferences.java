@@ -23,6 +23,10 @@ public class UserPreferences {
     @Column(name = "rating")
     private Map<Long, Integer> preferences;
 
+    @ManyToOne
+    @JoinColumn(name = "cluster_id")
+    private Cluster cluster;
+
     public UserPreferences(int owner) {
         ownerId = owner;
         preferences = new HashMap<>();

@@ -1,11 +1,20 @@
 package com.springingdream.adviser.model;
 
+import javax.persistence.*;
 import java.util.*;
 
+@Entity
+@Table(name = "clusters")
 public class Cluster {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @OneToMany
     private List<UserPreferences> users;
+
+    @Transient
     private Map<Long, Double> centroid;
 
     public Cluster() {
