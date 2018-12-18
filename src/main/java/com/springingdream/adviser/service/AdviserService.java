@@ -5,22 +5,18 @@ import com.springingdream.adviser.model.Product;
 import com.springingdream.adviser.model.UserPreferences;
 import com.springingdream.adviser.payload.ApiResponse;
 import com.springingdream.adviser.payload.PagedResponse;
-import com.springingdream.adviser.payload.ProductResponse;
 import com.springingdream.adviser.repository.ClusterRepository;
 import com.springingdream.adviser.repository.UserPreferencesRepository;
-import com.springingdream.adviser.util.ModelMapper;
-import com.springingdream.adviser.util.ProductsAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AdviserService {
 
     @Autowired
-    private UserPreferencesRepository userPreferencesRepository;
+    UserPreferencesRepository userPreferencesRepository;
 
     @Autowired
     private ClusterRepository clusterRepository;
@@ -30,8 +26,19 @@ public class AdviserService {
     List<Cluster> clusters = new ArrayList<>();
 
     public AdviserService() {
-        //TODO init clusters from DATABASE
+
+    }
+
+    public boolean init() {
+        List<UserPreferences> userPreferences = getPreferences();
+        for (UserPreferences user : userPreferences) {
+            Cluster userCluser = user.getCluster();
+            if (!clusters.contains(userCluser)) {
+                clusters.add(userCluser);
+            }
+        }
         cluster(); //???
+        return true;
     }
 
     /**
@@ -153,28 +160,28 @@ public class AdviserService {
                                                                      List<UserPreferences> preferences) {
         List<Long> recommendations = recommend(userId, preferences);
 
-        List<Product> products = ProductsAPI.getProductsByIdIn(recommendations);
+//        List<Product> products = ProductsAPI.getProductsByIdIn(recommendations);
 
-        if (products == null) {
+        if (recommendations == null) {
             return new ApiResponse<>(false, "Nothing to recommend");
         }
 
-        int totalElements = products.size();
+        int totalElements = recommendations.size();
         int totalPages = totalElements / size + 1;
         boolean last = false;
 
-        List<ProductResponse> productResponses = products.stream()
-                .map(ModelMapper::mapProductToProductResponse).collect(Collectors.toList());
+//        List<ProductResponse> productResponses = products.stream()
+//                .map(ModelMapper::mapProductToProductResponse).collect(Collectors.toList());
 
         if ((page + 1) * size > totalElements) {
-            productResponses = productResponses.subList(page * size, totalElements);
+            recommendations = recommendations.subList(page * size, totalElements);
             last = true;
         } else {
-            productResponses = productResponses.subList(page * size, (page + 1) * size);
+            recommendations = recommendations.subList(page * size, (page + 1) * size);
         }
 
         return new ApiResponse<>(true,
-                new PagedResponse<>(productResponses, page, size, totalElements, totalPages, last));
+                new PagedResponse<>(recommendations, page, size, totalElements, totalPages, last));
     }
 
     /**
@@ -218,10 +225,11 @@ public class AdviserService {
     }
 
     /**
-     * Similarity function for two users
-     * @param preferences
-     * @param otherPreferences
-     * @return
+     * Similarity function for two users.
+     * The order of values in `preferences` and `otherPreferences` doesn't matter. The result will be the same for the same pair.
+     * @param preferences - one of the users whose similarity we want to calculate.
+     * @param otherPreferences - another user  whose similarity we want to calculate.
+     * @return - the bigger return value is - the more similar user are.
      */
     double calcSimilarity(UserPreferences preferences, UserPreferences otherPreferences) {
         double result = 1.0; // To prevent division by zero in case of 100% similarity
@@ -252,9 +260,14 @@ public class AdviserService {
         this.clusterSize = clusterSize;
     }
 
+    /**
+     * Get preferences of all users in the same cluster with given.
+     * @param userId - id of the user whose cluster preferences will be returned
+     * @return - list of UserPreferences in the cluster
+     */
     private List<UserPreferences> getPreferencesForCluster(int userId) {
-        //TODO
-        return null;
+        long clusterId = userPreferencesRepository.getUsersClusterId(userId);
+        return userPreferencesRepository.getClusterPreferences(clusterId);
     }
 
     private List<UserPreferences> getPreferences() {

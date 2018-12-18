@@ -27,6 +27,10 @@ public class UserPreferences {
     @JoinColumn(name = "cluster_id")
     private Cluster cluster;
 
+    public UserPreferences() {
+
+    }
+
     public UserPreferences(int owner) {
         ownerId = owner;
         preferences = new HashMap<>();
@@ -58,6 +62,14 @@ public class UserPreferences {
 
     public boolean contains(long productId) {
         return preferences.containsKey(productId);
+    }
+
+    public Cluster getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(Cluster cluster) {
+        this.cluster = cluster;
     }
 
     @Override
