@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/adviser")
 public class AdviserController {
 
-//    private AdviserService adviserService = new AdviserService();
+
     @Autowired
     private AdviserService adviserService;
 
@@ -24,7 +24,7 @@ public class AdviserController {
                                           @RequestParam(value = "page") int page,
                                           @RequestParam(value = "size") int size,
                                           @RequestParam(value = "useClusters", required = false) boolean useClusters) {
-        adviserService.init();
+        adviserService.init(); //TODO move init in another method. Needs to be run only once.
         if (useClusters) {
             return adviserService.getGeneralRecommendationsByCluster(userId, page, size);
         }

@@ -29,6 +29,11 @@ public class AdviserService {
 
     }
 
+    /**
+     * Init clusters from database.
+     * TODO: find a better way to do it
+     * @return true on success
+     */
     public boolean init() {
         List<UserPreferences> userPreferences = getPreferences();
         for (UserPreferences user : userPreferences) {
@@ -139,7 +144,7 @@ public class AdviserService {
     }
 
     /**
-     * A silly way to add a user to cluster.
+     * A simple way to add a user to cluster.
      */
     void addUserToCluster(UserPreferences user) {
 
@@ -169,8 +174,6 @@ public class AdviserService {
                                                                      List<UserPreferences> preferences) {
         List<Long> recommendations = recommend(userId, preferences);
 
-//        List<Product> products = ProductsAPI.getProductsByIdIn(recommendations);
-
         if (recommendations == null) {
             return new ApiResponse<>(false, "Nothing to recommend");
         }
@@ -179,8 +182,6 @@ public class AdviserService {
         int totalPages = totalElements / size + 1;
         boolean last = false;
 
-//        List<ProductResponse> productResponses = products.stream()
-//                .map(ModelMapper::mapProductToProductResponse).collect(Collectors.toList());
 
         if ((page + 1) * size > totalElements) {
             recommendations = recommendations.subList(page * size, totalElements);
@@ -275,6 +276,9 @@ public class AdviserService {
         return 1 / result;
     }
 
+    /**
+     * ONLY FOR TESTS
+     */
     void setClusterSize(int clusterSize) {
         this.clusterSize = clusterSize;
     }
