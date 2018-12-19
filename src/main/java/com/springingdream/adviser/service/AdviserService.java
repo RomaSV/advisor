@@ -37,7 +37,12 @@ public class AdviserService {
                 clusters.add(userCluser);
             }
         }
-        cluster(); //???
+//        System.out.println(clusters);
+//        for (Cluster cluster : clusters) {
+//            cluster.calcCentroid();
+//            clusterRepository.save(cluster);
+//        }
+//        cluster(); //???
         return true;
     }
 
@@ -104,6 +109,7 @@ public class AdviserService {
                     for (int j = 0; j < clusters.size(); j++) {
                         if (j == i) continue;
                         double distance = clusters.get(j).calcDistance(user);
+                        System.out.println("distance: " + distance);
                         if (distance < minDistance) {
                             minDistance = distance;
                             minDistanceCluster = j;
@@ -114,7 +120,10 @@ public class AdviserService {
                         clusters.get(i).remove(user);
                         Cluster newCluster = clusters.get(minDistanceCluster);
                         newCluster.add(user);
-                        userPreferencesRepository.setCluster(newCluster.getId(), user.getOwnerId());
+
+                        user.setCluster(newCluster);
+                        clusterRepository.save(newCluster);
+                        userPreferencesRepository.save(user);
                     }
 
                 }
@@ -190,7 +199,17 @@ public class AdviserService {
      */
     List<Long> recommend(int userId, List<UserPreferences> preferences) {
 
-        UserPreferences userPreferences = preferences.get(userId);
+        UserPreferences userPreferences = null;
+        for (UserPreferences user : preferences) {
+            if (user.getOwnerId() == userId) {
+                userPreferences = user;
+                break;
+            }
+        }
+        if (userPreferences == null) {
+            throw new IllegalArgumentException("User with id " + userId + " not found in given preferences");
+        }
+
 
         Map<Long, Double> rank = new HashMap<>();
 

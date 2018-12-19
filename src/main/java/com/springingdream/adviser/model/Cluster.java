@@ -14,7 +14,10 @@ public class Cluster {
     @OneToMany
     private List<UserPreferences> users;
 
-    @Transient
+    @ElementCollection
+    @JoinTable(name="centroids", joinColumns=@JoinColumn(name="id"))
+    @MapKeyColumn (name="product_id")
+    @Column(name="avg_rating")
     private Map<Long, Double> centroid;
 
     public Cluster() {
@@ -65,7 +68,7 @@ public class Cluster {
         return users.size();
     }
 
-    private void calcCentroid() {
+    public void calcCentroid() {
         for (UserPreferences user : users) {
             Set<Long> products = user.getPreferences().keySet();
 
@@ -81,6 +84,19 @@ public class Cluster {
                 centroid.put(product, centroid.get(product) / users.size());
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Cluster cluster = (Cluster) o;
+        return id == cluster.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override
