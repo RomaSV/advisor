@@ -9,13 +9,12 @@
 	<packaging>jar</packaging>
 
 	<name>adviser</name>
-	<description></description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.0.5.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 
 	<properties>
@@ -68,16 +67,11 @@
             <version>5.3.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.3.0</version>
-            <scope>test</scope>
-        </dependency>
 
     </dependencies>
 
 	<build>
+		<finalName>marketplace-adviser</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
