@@ -15,8 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdviserController {
 
 
+    private final AdviserService adviserService;
+
     @Autowired
-    private AdviserService adviserService;
+    public AdviserController(AdviserService adviserService) {
+        this.adviserService = adviserService;
+    }
 
     @GetMapping("/recommendations")
     @ApiOperation(value = "Get products similar to one in params.")

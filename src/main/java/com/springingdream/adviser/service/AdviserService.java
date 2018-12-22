@@ -3,10 +3,11 @@ package com.springingdream.adviser.service;
 import com.springingdream.adviser.model.Cluster;
 import com.springingdream.adviser.model.Product;
 import com.springingdream.adviser.model.UserPreferences;
-import com.springingdream.adviser.payload.ApiResponse;
-import com.springingdream.adviser.payload.PagedResponse;
+import com.springingdream.adviser.payload.UserProduct;
 import com.springingdream.adviser.repository.ClusterRepository;
 import com.springingdream.adviser.repository.UserPreferencesRepository;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,23 +16,25 @@ import java.util.*;
 @Service
 public class AdviserService {
 
-    @Autowired
-    UserPreferencesRepository userPreferencesRepository;
+    private final UserPreferencesRepository userPreferencesRepository;
 
-    @Autowired
-    private ClusterRepository clusterRepository;
+    private final ClusterRepository clusterRepository;
 
     // Just for now it's static, but should be calculated dynamically for each cluster
     private int clusterSize = 25;
-    List<Cluster> clusters = new ArrayList<>();
+    private List<Cluster> clusters = new ArrayList<>();
 
-    public AdviserService() {
+    @Autowired
+    public AdviserService(UserPreferencesRepository userPreferencesRepository, ClusterRepository clusterRepository) {
 
+        this.userPreferencesRepository = userPreferencesRepository;
+        this.clusterRepository = clusterRepository;
     }
 
     /**
      * Init clusters from database.
      * TODO: find a better way to do it
+     *
      * @return true on success
      */
     public boolean init() {
@@ -54,37 +57,39 @@ public class AdviserService {
     /**
      * Gives recommendations to user based on ratings made by ALL other users.
      * Reasonable to use when user amount is not big enough to cluster them.
+     *
      * @param userId - user that receives recommendations
-     * @param page - number of the current page of a recommendations list
-     * @param size - amount of recommendations on each page
+     * @param page   - number of the current page of a recommendations list
+     * @param size   - amount of recommendations on each page
      */
-    public ApiResponse getGeneralRecommendations(int userId, int page, int size) {
+    public List<UserProduct> getGeneralRecommendations(int userId, int page, int size) {
         List<UserPreferences> preferences = getPreferences();
         return getGeneralRecommendations(userId, page, size, preferences);
     }
 
     /**
      * Gives recommendations to user based on ratings made by other users IN USER'S CLUSTER.
+     *
      * @param userId - user that receives recommendations
-     * @param page - number of the current page of a recommendations list
-     * @param size - amount of recommendations on each page
+     * @param page   - number of the current page of a recommendations list
+     * @param size   - amount of recommendations on each page
      */
-    public ApiResponse getGeneralRecommendationsByCluster(int userId, int page, int size) {
+    public List<UserProduct> getGeneralRecommendationsByCluster(int userId, int page, int size) {
         List<UserPreferences> preferences = getPreferencesForCluster(userId);
         return getGeneralRecommendations(userId, page, size, preferences);
     }
 
-    public ApiResponse getSimilar(Product product, long userId, int page, int size) {
+    public List<UserProduct> getSimilar(UserProduct product, long userId, int page, int size) {
         //TODO collaboration filtering
         return null;
     }
 
-    public ApiResponse getSimilar(Product product, int page, int size) {
+    public List<UserProduct> getSimilar(UserProduct product, int page, int size) {
         //TODO one of content based methods.. or not?
         return null;
     }
 
-    public ApiResponse getRelated(Product product, int page, int size) {
+    public List<UserProduct> getRelated(UserProduct product, int page, int size) {
         //TODO one of content based methods.. or not?
         return null;
     }
@@ -93,7 +98,7 @@ public class AdviserService {
      * Cluster or recluster users.
      * Users with no rated products remain in their previous cluster.
      */
-    public ApiResponse cluster() {
+    public void cluster() {
 
         boolean changed = true;
 
@@ -102,12 +107,12 @@ public class AdviserService {
 
             List<List<UserPreferences>> clusterUsers = new ArrayList<>();
 
-            for (Cluster cluster: clusters) {
+            for (Cluster cluster : clusters) {
                 clusterUsers.add(new ArrayList<>(cluster.getUsers()));
             }
 
             for (int i = 0; i < clusters.size(); i++) {
-                for (UserPreferences user: clusterUsers.get(i)) {
+                for (UserPreferences user : clusterUsers.get(i)) {
                     int minDistanceCluster = i;
                     double minDistance = clusters.get(minDistanceCluster).calcDistance(user);
 
@@ -135,8 +140,6 @@ public class AdviserService {
             }
 
         }
-
-        return new ApiResponse<>(true, "Users are successfully clustered.");
     }
 
     public void addUserToCluster(int userId) {
@@ -147,9 +150,8 @@ public class AdviserService {
      * A simple way to add a user to cluster.
      */
     void addUserToCluster(UserPreferences user) {
-
         boolean added = false;
-        for (Cluster cluster: clusters) {
+        for (Cluster cluster : clusters) {
             if (cluster.getSize() < clusterSize) {
                 cluster.add(user);
                 userPreferencesRepository.setCluster(cluster.getId(), user.getOwnerId());
@@ -170,64 +172,36 @@ public class AdviserService {
 
     }
 
-    private ApiResponse getGeneralRecommendations(int userId, int page, int size,
-                                                                     List<UserPreferences> preferences) {
-        List<Long> recommendations = recommend(userId, preferences);
+    private List<UserProduct> getGeneralRecommendations(int userId, UserPreferences targetedPrefs, List<UserPreferences> preferences) {
+        List<UserProduct> recommendations = recommend(userId, targetedPrefs, preferences);
 
         if (recommendations == null) {
-            return new ApiResponse<>(false, "Nothing to recommend");
+            return Collections.emptyList();
         }
 
-        int totalElements = recommendations.size();
-        int totalPages = totalElements / size + 1;
-        boolean last = false;
-
-
-        if ((page + 1) * size > totalElements) {
-            recommendations = recommendations.subList(page * size, totalElements);
-            last = true;
-        } else {
-            recommendations = recommendations.subList(page * size, (page + 1) * size);
-        }
-
-        return new ApiResponse<>(true,
-                new PagedResponse<>(recommendations, page, size, totalElements, totalPages, last));
+        return recommendations;
     }
 
     /**
      * Collaboration filtering algorithm
      * TODO Java doc for this
      */
-    List<Long> recommend(int userId, List<UserPreferences> preferences) {
-
-        UserPreferences userPreferences = null;
-        for (UserPreferences user : preferences) {
-            if (user.getOwnerId() == userId) {
-                userPreferences = user;
-                break;
-            }
-        }
-        if (userPreferences == null) {
-            throw new IllegalArgumentException("User with id " + userId + " not found in given preferences");
-        }
-
-
-        Map<Long, Double> rank = new HashMap<>();
+    List<UserProduct> recommend(
+            int userId,
+            @NotNull UserPreferences targetedPrefs,
+            @NotNull List<UserPreferences> preferences) {
+        Map<UserProduct, Double> rank = new HashMap<>();
 
         for (UserPreferences otherUserPref : preferences) {
             if (otherUserPref.getOwnerId() != userId) {
-                double similarity = calcSimilarity(userPreferences, otherUserPref);
+                double similarity = ClassificationUtils.calcSimilarity(targetedPrefs, otherUserPref);
 
-                if (similarity == 0.0) {
-                    continue;
-                }
-
-                for (long productId : otherUserPref.getPreferences().keySet()) {
-                    if (!userPreferences.contains(productId)) {
+                for (UserProduct productId : otherUserPref.getPreferences().keySet()) {
+                    if (!targetedPrefs.contains(productId)) {
                         if (!rank.containsKey(productId)) {
                             rank.put(productId, 0.0);
                         }
-                        double newValue = rank.get(productId) + similarity * otherUserPref.getProductRating(productId);
+                        double newValue = rank.get(productId) + similarity * otherUserPref.getRating(productId);
                         rank.put(productId, newValue);
                     }
 
@@ -235,56 +209,23 @@ public class AdviserService {
             }
         }
 
-        List<Long> result = new ArrayList<>();
+        List<UserProduct> result = new ArrayList<>();
 
         rank.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue()).forEach((entry) -> result.add(entry.getKey()));
+                .sorted(Map.Entry.comparingByValue()).forEach((entry) -> result.add(entry.));
 
         Collections.reverse(result);
         return result;
     }
 
-    /**
-     * Similarity function for two users.
-     * The order of values in `preferences` and `otherPreferences` doesn't matter. The result will be the same for the same pair.
-     * @param preferences - one of the users whose similarity we want to calculate.
-     * @param otherPreferences - another user  whose similarity we want to calculate.
-     * @return - the bigger return value is - the more similar user are.
-     */
-    double calcSimilarity(UserPreferences preferences, UserPreferences otherPreferences) {
-        double result = 1.0; // To prevent division by zero in case of 100% similarity
-
-        List<Long> commonProducts = new ArrayList<>();
-
-        for (long product : preferences.getPreferences().keySet()) {
-            for (long otherProduct : otherPreferences.getPreferences().keySet()) {
-                if (product == otherProduct) {
-                    commonProducts.add(product);
-                    break;
-                }
-            }
-        }
-
-        for (long product : commonProducts) {
-            result += Math.abs(preferences.getProductRating(product) - otherPreferences.getProductRating(product));
-        }
-
-        if (!commonProducts.isEmpty()) {
-            result /= commonProducts.size();
-        }
-
-        return 1 / result;
-    }
-
-    /**
-     * ONLY FOR TESTS
-     */
+    @TestOnly
     void setClusterSize(int clusterSize) {
         this.clusterSize = clusterSize;
     }
 
     /**
      * Get preferences of all users in the same cluster with given.
+     *
      * @param userId - id of the user whose cluster preferences will be returned
      * @return - list of UserPreferences in the cluster
      */

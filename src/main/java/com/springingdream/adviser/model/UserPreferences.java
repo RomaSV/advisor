@@ -1,5 +1,9 @@
 package com.springingdream.adviser.model;
 
+import com.springingdream.adviser.payload.UserProduct;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +14,8 @@ import java.util.Map;
  * For now it's only products rated by user, however other fields may be added in the future (e.g. preferred categories).
  */
 @Entity
+@NoArgsConstructor
+@Data
 @Table(name = "user_preferences")
 public class UserPreferences {
 
@@ -21,55 +27,23 @@ public class UserPreferences {
     @CollectionTable(name = "user_ratings")
     @MapKeyColumn(name = "product_id")
     @Column(name = "rating")
-    private Map<Long, Integer> preferences;
+    private Map<UserProduct, Integer> preferences;
 
     @ManyToOne
     @JoinColumn(name = "cluster_id")
     private Cluster cluster;
-
-    public UserPreferences() {
-
-    }
 
     public UserPreferences(int owner) {
         ownerId = owner;
         preferences = new HashMap<>();
     }
 
-    public int getOwnerId() {
-        return ownerId;
+    public Integer getRating(UserProduct product) {
+        return preferences.get(product);
     }
 
-    public void setOwnerId(int ownerId) {
-        this.ownerId = ownerId;
-    }
-
-    public Map<Long, Integer> getPreferences() {
-        return preferences;
-    }
-
-    public void setPreferences(Map<Long, Integer> preferences) {
-        this.preferences = preferences;
-    }
-
-    public void addProductRating(long productId, int rating) {
-        preferences.put(productId, rating);
-    }
-
-    public int getProductRating(long productId) {
-        return preferences.get(productId);
-    }
-
-    public boolean contains(long productId) {
-        return preferences.containsKey(productId);
-    }
-
-    public Cluster getCluster() {
-        return cluster;
-    }
-
-    public void setCluster(Cluster cluster) {
-        this.cluster = cluster;
+    public boolean contains(UserProduct product) {
+        return preferences.containsKey(product);
     }
 
     @Override
