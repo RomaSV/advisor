@@ -8,7 +8,7 @@ import java.util.Date;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Rating {
-    private Long id;
+    private String id;
 
     private Long uid;
     private Long pid;
