@@ -1,4 +1,5 @@
 FROM maven:3-jdk-11
+
 MAINTAINER Nikita Kiselev <docker@dekinci.com>
 
 ENV WORK_DIR=/app
@@ -14,4 +15,5 @@ RUN ["mvn", "package", "-Dmaven.test.skip=true", "-U"]
 FROM openjdk:11
 COPY --from=0 /app/target/marketplace-adviser.jar /app/marketplace-adviser.jar
 CMD ["java","-jar","/app/marketplace-adviser.jar"]
+
 EXPOSE 10000
