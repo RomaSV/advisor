@@ -1,107 +1,98 @@
 package com.springingdream.adviser.model;
 
-import javax.persistence.*;
+import lombok.Data;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.commons.math3.stat.inference.TTest;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.*;
 
-@Entity
-@Table(name = "clusters")
+@Data
+@Document
 public class Cluster {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
-    @OneToMany
-    private List<UserPreferences> users;
+    private List<User> users;
 
-    @ElementCollection
-    @JoinTable(name="centroids", joinColumns=@JoinColumn(name="id"))
-    @MapKeyColumn (name="product_id")
-    @Column(name="avg_rating")
-    private Map<Long, Double> centroid;
+    private Map<Long, Double> portrait;
+
+    private Map<Long, Integer> portraitSize;
+
+    private transient Set<User> userSet = new HashSet<>();
 
     public Cluster() {
         users = new ArrayList<>();
-        centroid = new HashMap<>();
+        portrait = new HashMap<>();
+        portraitSize = new HashMap<>();
     }
 
-    public void add(UserPreferences userPreferences) {
-        users.add(userPreferences);
-        calcCentroid();
+    public void setUsers(List<User> users) {
+        this.users = users;
+        userSet = new HashSet<>(users);
     }
 
-    public void remove(UserPreferences userPreferences) {
-        users.remove(userPreferences);
-        calcCentroid();
+    public void add(Long pid, Double rate) {
+        portrait.merge(pid, rate, (o, n) -> o + n );
+        portraitSize.merge(pid, 1, (o, n) -> o + n);
     }
 
-    public double calcDistance(UserPreferences user) {
-
-        double distance = 0.0;
-
-        for (long product: user.getPreferences().keySet()) {
-
-            if (!centroid.containsKey(product)) continue;
-
-            double difference = user.getProductRating(product) - centroid.get(product);
-            distance += difference * difference;
-        }
-
-        distance = Math.sqrt(distance);
-
-        return distance;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public List<UserPreferences> getUsers() {
-        return users;
-    }
-
-    public int getSize() {
-        return users.size();
-    }
-
-    public void calcCentroid() {
-        for (UserPreferences user : users) {
-            Set<Long> products = user.getPreferences().keySet();
-
-            for (long product : products) {
-                if (centroid.containsKey(product)) {
-                    centroid.put(product, centroid.get(product) + user.getProductRating(product));
-                } else {
-                    centroid.put(product, (double)user.getProductRating(product));
-                }
-            }
-
-            for (long product: centroid.keySet()) {
-                centroid.put(product, centroid.get(product) / users.size());
-            }
+    public void addUser(Rater user) {
+        users.add(new User(user.getUid()));
+        userSet.add(new User(user.getUid()));
+        for (Map.Entry<Long, Double> e : user.getRatings().entrySet()) {
+            portrait.merge(e.getKey(), e.getValue(), (o, n) -> o + n );
+            portraitSize.merge(e.getKey(), 1, (o, n) -> o + n);
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Cluster cluster = (Cluster) o;
-        return id == cluster.id;
+    public Double getCost(Long pid) {
+        if (portraitSize.get(pid) == null)
+            return null;
+
+        return portrait.get(pid) / portraitSize.get(pid);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    public boolean contains(Long uid) {
+        return userSet.contains(new User(uid));
     }
 
-    @Override
-    public String toString() {
-        return "Cluster with id " + id + " contains: " + users.toString();
+    public boolean closeEnough(Rater user) {
+        List<Double> intersectionU = new ArrayList<>();
+        List<Double> intersectionC = new ArrayList<>();
+        int interSize = 0;
+        for (Map.Entry<Long, Double> e : user.getRatings().entrySet())
+            if (portrait.containsKey(e.getKey())) {
+                intersectionU.add(e.getValue());
+                intersectionC.add(portrait.get(e.getKey()) / portraitSize.get(e.getKey()));
+                interSize++;
+            }
+
+        if (interSize > 4)
+            return compareHuge(intersectionC, intersectionU);
+        else
+            return compareSmall(intersectionC, intersectionU);
     }
 
+    private boolean compareHuge(List<Double> first, List<Double> second) {
+        SummaryStatistics diff = new SummaryStatistics();
+        for (int i = 0; i < first.size(); i++) {
+            diff.addValue(first.get(i) - second.get(i));
+        }
+
+        return new TTest().tTest(0.0, diff, 0.07);
+    }
+
+    private boolean compareSmall(List<Double> first, List<Double> second) {
+        double sum = 0;
+        double deltaSum = 0;
+        for (int i = 0; i < first.size(); i++) {
+            sum += Math.abs(first.get(i));
+            sum += Math.abs(second.get(i));
+            deltaSum += first.get(i);
+            deltaSum -= second.get(i);
+        }
+
+        return Math.abs(deltaSum) / sum / 2 < 0.1;
+    }
 }

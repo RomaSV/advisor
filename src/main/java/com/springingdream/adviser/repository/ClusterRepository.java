@@ -1,9 +1,7 @@
 package com.springingdream.adviser.repository;
 
 import com.springingdream.adviser.model.Cluster;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-@Repository
-public interface ClusterRepository extends JpaRepository<Cluster, Long> {
+public interface ClusterRepository extends MongoRepository<Cluster, Long> {
 }
