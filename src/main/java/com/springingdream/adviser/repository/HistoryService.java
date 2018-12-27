@@ -26,18 +26,16 @@ public class HistoryService {
 
     @Autowired
     public HistoryService(RestTemplate template, @Qualifier("eurekaClient") EurekaClient eurekaClient) {
-        Application application = eurekaClient.getApplication("marketplace-passport");
+        Application application = eurekaClient.getApplication("marketplace-history");
         InstanceInfo instanceInfo = application.getInstances().get(0);
-        String ip = instanceInfo.getIPAddr();
-        int port = instanceInfo.getPort();
-//        url = "http://" + ip + ":" + port + "/api/passport";
+        url = instanceInfo.getHomePageUrl();
         this.template = template;
     }
 
     public List<Rating> ratings(Long uid) {
         try {
             ResponseEntity<List<Rating>> response = template.exchange(
-                    url + "/api/history/user/" + uid + "/ratings",
+                    url + "/user/" + uid + "/ratings",
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<List<Rating>>(){});

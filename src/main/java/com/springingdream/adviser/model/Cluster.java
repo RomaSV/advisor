@@ -11,8 +11,6 @@ import java.util.*;
 @Document
 public class Cluster {
 
-    private Long id;
-
     private List<User> users;
 
     private Map<Long, Double> portrait;
