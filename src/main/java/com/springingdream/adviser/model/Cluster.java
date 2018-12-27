@@ -78,7 +78,7 @@ public class Cluster {
             diff.addValue(first.get(i) - second.get(i));
         }
 
-        return new TTest().tTest(0.0, diff, 0.07);
+        return new TTest().tTest(0.0, diff, 0.25);
     }
 
     private boolean compareSmall(List<Double> first, List<Double> second) {
@@ -91,6 +91,6 @@ public class Cluster {
             deltaSum -= second.get(i);
         }
 
-        return Math.abs(deltaSum) / sum / 2 < 0.1;
+        return Math.abs(deltaSum) / sum / 2 < 0.3;
     }
 }

@@ -59,7 +59,11 @@ public class AdviserService {
      * @param userId - user that receives recommendations
      */
     public List<Long> getUserRecommendations(Long userId) {
-        return ch.getBestProductsForCluster(userId);
+        List<Long> advice = ch.getBestProductsForCluster(userId);
+        List<Rating> rated = service.ratings(userId);
+        for (Rating r : rated)
+            advice.remove(r.getPid());
+        return advice;
     }
 
 }
